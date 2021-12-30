@@ -22,10 +22,11 @@ from functools import lru_cache, reduce
 
 def codegen(func):
     @lru_cache()
-    def make_func_code(numfields):
+    def make_func_code(numfields, nkeywords=0):
         names = [f'_{n}' for n in range(numfields)]
         d = dict()
-        exec(func(names), globals(), d)
+        args = (names, nkeywords) if nkeywords else (names,)
+        exec(func(*args), globals(), d)
         return d.popitem()[1]
 
     return make_func_code
@@ -74,8 +75,8 @@ def code_replace(code, **kwargs):
     return type(code)(*unpacked)
 
 
-def patch_args_and_attributes(func, fields, start=0):
-    return type(func)(
+def patch_args_and_attributes(func, fields, defaults, start=0):
+    new_func = type(func)(
         code_replace(
             func.__code__,
             co_names=(*func.__code__.co_names[:start], *fields),
@@ -83,6 +84,9 @@ def patch_args_and_attributes(func, fields, start=0):
         ),
         func.__globals__
     )
+    if defaults:
+        new_func.__defaults__ = defaults
+    return new_func
 
 
 def patch_attributes(func, fields, start=0):
@@ -100,8 +104,10 @@ def all_hints(cls):
 
 
 @codegen
-def make__init__(fields):
-    code = 'def __init__(self, ' + ','.join(fields) + '):\n'
+def make__init__(fields, nkeywords=0):
+    kwargs = [f + "=None" for f in (fields[-nkeywords:] if nkeywords else [])]
+    args = fields[:-nkeywords] if nkeywords else fields
+    code = 'def __init__(self, ' + ','.join(args + kwargs) + '):\n'
     return code + '\n'.join(f' self.{name} = {name}\n' for name in fields)
 
 
@@ -143,23 +149,28 @@ def dataklass(cls):
         >>> @dataklass
         ... class Coordinates:
         ...     x: int
-        ...     y: int
+        ...     y: int = 6
         >>>
         >>> a = Coordinates(2, 3)
         >>> b = Coordinates(2, 3)
         >>> assert a == b
         >>>
-        >>> a
-        Coordinates(2, 3)
+        >>> Coordinates(5)
+        Coordinates(5, 6)
+        >>> Coordinates(8, 9)
+        Coordinates(8, 9)
 
     :param cls:
     :return:
     """
     fields = all_hints(cls)
     nfields = len(fields)
+    keywords = [k for k in fields.keys() if hasattr(cls, k)]
+    nkeywords = len(keywords)
+    defaults = tuple(getattr(cls, k) for k in keywords)
     clsdict = vars(cls)
     if '__init__' not in clsdict:
-        cls.__init__ = patch_args_and_attributes(make__init__(nfields), fields)
+        cls.__init__ = patch_args_and_attributes(make__init__(nfields, nkeywords), fields, defaults)
     if '__repr__' not in clsdict:
         cls.__repr__ = patch_attributes(make__repr__(nfields), fields, 2)
     if '__eq__' not in clsdict:
