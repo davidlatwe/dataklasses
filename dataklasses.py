@@ -156,6 +156,8 @@ def dataklass(cls):
         Coordinates(5, 6)
         >>> Coordinates(8, 9)
         Coordinates(8, 9)
+        >>> Coordinates(y=8, x=9)
+        Coordinates(9, 8)
 
     :param cls:
     :return:
