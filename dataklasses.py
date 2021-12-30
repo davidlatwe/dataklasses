@@ -14,6 +14,7 @@
 
 __all__ = ['dataklass']
 
+import sys
 from functools import lru_cache, reduce
 
 
@@ -28,17 +29,68 @@ def codegen(func):
     return make_func_code
 
 
+# Following code object replace backport implementation is referenced
+# from https://github.com/HypothesisWorks/hypothesis/pull/1944
+# specifically, commit: 8f47297fa2e19c426a42b06bb5f8bf1406b8f0f3
+_CODE_FIELD_ORDER = [
+    "co_argcount",
+    "co_kwonlyargcount",
+    "co_nlocals",
+    "co_stacksize",
+    "co_flags",
+    "co_code",
+    "co_consts",
+    "co_names",
+    "co_varnames",
+    "co_filename",
+    "co_name",
+    "co_firstlineno",
+    "co_lnotab",
+    "co_freevars",
+    "co_cellvars",
+]
+if sys.version_info >= (3, 8, 0):
+    # PEP 570 added "positional only arguments"
+    _CODE_FIELD_ORDER.insert(1, "co_posonlyargcount")
+
+
+def code_replace(code, **kwargs):
+    """Python 3.8 CodeType.replace backport
+
+    Related links:
+    https://docs.python.org/3/library/types.html#types.CodeType.replace
+    https://docs.python.org/3/whatsnew/3.8.html#other-language-changes
+    https://bugs.python.org/issue37032
+
+    Implementation reference:
+    https://github.com/pganssle/hypothesis/blob/ffcec4f/hypothesis-python/src/hypothesis/internal/compat.py#L400-L413
+
+    """
+    unpacked = [getattr(code, name) for name in _CODE_FIELD_ORDER]
+    for k, v in kwargs.items():
+        unpacked[_CODE_FIELD_ORDER.index(k)] = v
+    return type(code)(*unpacked)
+
+
 def patch_args_and_attributes(func, fields, start=0):
-    return type(func)(func.__code__.replace(
-        co_names=(*func.__code__.co_names[:start], *fields),
-        co_varnames=('self', *fields),
-    ), func.__globals__)
+    return type(func)(
+        code_replace(
+            func.__code__,
+            co_names=(*func.__code__.co_names[:start], *fields),
+            co_varnames=('self', *fields),
+        ),
+        func.__globals__
+    )
 
 
 def patch_attributes(func, fields, start=0):
-    return type(func)(func.__code__.replace(
-        co_names=(*func.__code__.co_names[:start], *fields)
-    ), func.__globals__)
+    return type(func)(
+        code_replace(
+            func.__code__,
+            co_names=(*func.__code__.co_names[:start], *fields)
+        ),
+        func.__globals__
+    )
 
 
 def all_hints(cls):
