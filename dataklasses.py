@@ -61,11 +61,12 @@ def make__repr__(fields):
 def make__eq__(fields):
     selfvals = ','.join(f'self.{name}' for name in fields)
     othervals = ','.join(f'other.{name}' for name in fields)
-    return 'def __eq__(self, other):\n' \
-           '  if self.__class__ is other.__class__:\n' \
-           f'    return ({selfvals},) == ({othervals},)\n' \
-           '  else:\n' \
-           '    return NotImplemented\n'
+    return f"""def __eq__(self, other):
+    if self.__class__ is other.__class__:
+        return ({selfvals},) == ({othervals},)
+    else:
+        return NotImplemented
+    """
 
 
 @codegen
