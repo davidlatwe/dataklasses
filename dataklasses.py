@@ -82,6 +82,21 @@ def make__hash__(fields):
 
 
 def dataklass(cls):
+    """A different spin on dataclasses.
+
+    Example:
+        >>> @dataklass
+        ... class Coordinates:
+        ...     x: int
+        ...     y: int
+        >>>
+        >>> a = Coordinates(2, 3)
+        >>> b = Coordinates(2, 3)
+        >>> assert a == b
+
+    :param cls:
+    :return:
+    """
     fields = all_hints(cls)
     nfields = len(fields)
     clsdict = vars(cls)
@@ -94,9 +109,6 @@ def dataklass(cls):
     return cls
 
 
-# Example use
 if __name__ == '__main__':
-    @dataklass
-    class Coordinates:
-        x: int
-        y: int
+    import doctest
+    doctest.testmod(optionflags=doctest.FAIL_FAST)
