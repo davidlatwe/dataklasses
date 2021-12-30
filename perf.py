@@ -1,5 +1,6 @@
 # A import performance test of standard classes, dataclasses, attrs, and dataklasses
 
+import os
 import sys
 import time
 
@@ -83,7 +84,6 @@ def main(reps):
     write_perftemp(100, standard_template, '')
     run_test('standard classes', reps)
 
-    write_perftemp(100, namedtuple_template, 'from collections import namedtuple\n')
     write_perftemp(100, namedtuple_template, 'from typing import NamedTuple\n')
     run_test('namedtuple', reps)
 
@@ -97,6 +97,8 @@ def main(reps):
 
     write_perftemp(100, dataklass_template, 'from dataklasses import dataklass\n')
     run_test('dataklasses', reps)
+
+    os.remove('perftemp.py')
 
 
 if __name__ == '__main__':
