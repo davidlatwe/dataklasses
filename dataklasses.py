@@ -18,7 +18,7 @@ from functools import lru_cache, reduce
 
 
 def codegen(func):
-    @lru_cache
+    @lru_cache()
     def make_func_code(numfields):
         names = [f'_{n}' for n in range(numfields)]
         d = dict()
