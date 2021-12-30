@@ -16,13 +16,16 @@ __all__ = ['dataklass']
 
 from functools import lru_cache, reduce
 
+
 def codegen(func):
     @lru_cache
     def make_func_code(numfields):
-        names = [ f'_{n}' for n in range(numfields) ]
-        exec(func(names), globals(), d:={})
+        names = [f'_{n}' for n in range(numfields)]
+        exec(func(names), globals(), d := {})
         return d.popitem()[1]
+
     return make_func_code
+
 
 def patch_args_and_attributes(func, fields, start=0):
     return type(func)(func.__code__.replace(
@@ -30,18 +33,22 @@ def patch_args_and_attributes(func, fields, start=0):
         co_varnames=('self', *fields),
     ), func.__globals__)
 
+
 def patch_attributes(func, fields, start=0):
     return type(func)(func.__code__.replace(
         co_names=(*func.__code__.co_names[:start], *fields)
     ), func.__globals__)
-    
+
+
 def all_hints(cls):
-    return reduce(lambda x, y: getattr(y, '__annotations__',{}) | x, cls.__mro__, {})
+    return reduce(lambda x, y: getattr(y, '__annotations__', {}) | x, cls.__mro__, {})
+
 
 @codegen
 def make__init__(fields):
     code = 'def __init__(self, ' + ','.join(fields) + '):\n'
     return code + '\n'.join(f' self.{name} = {name}\n' for name in fields)
+
 
 @codegen
 def make__repr__(fields):
@@ -49,25 +56,29 @@ def make__repr__(fields):
            ' return f"{type(self).__name__}(' + \
            ', '.join('{self.' + name + '!r}' for name in fields) + ')"\n'
 
+
 @codegen
 def make__eq__(fields):
     selfvals = ','.join(f'self.{name}' for name in fields)
     othervals = ','.join(f'other.{name}' for name in fields)
-    return  'def __eq__(self, other):\n' \
-            '  if self.__class__ is other.__class__:\n' \
+    return 'def __eq__(self, other):\n' \
+           '  if self.__class__ is other.__class__:\n' \
            f'    return ({selfvals},) == ({othervals},)\n' \
-            '  else:\n' \
-            '    return NotImplemented\n'
+           '  else:\n' \
+           '    return NotImplemented\n'
+
 
 @codegen
 def make__iter__(fields):
     return 'def __iter__(self):\n' + '\n'.join(f'   yield self.{name}' for name in fields)
 
+
 @codegen
 def make__hash__(fields):
     self_tuple = '(' + ','.join(f'self.{name}' for name in fields) + ',)'
     return 'def __hash__(self):\n' \
-          f'    return hash({self_tuple})\n'
+           f'    return hash({self_tuple})\n'
+
 
 def dataklass(cls):
     fields = all_hints(cls)
@@ -81,11 +92,10 @@ def dataklass(cls):
     cls.__match_args__ = tuple(fields)
     return cls
 
+
 # Example use
 if __name__ == '__main__':
     @dataklass
     class Coordinates:
         x: int
         y: int
-
-
