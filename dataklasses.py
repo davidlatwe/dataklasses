@@ -148,6 +148,9 @@ def dataklass(cls):
         >>> a = Coordinates(2, 3)
         >>> b = Coordinates(2, 3)
         >>> assert a == b
+        >>>
+        >>> a
+        Coordinates(2, 3)
 
     :param cls:
     :return:
