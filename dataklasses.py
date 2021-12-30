@@ -22,11 +22,10 @@ from functools import lru_cache, reduce
 
 def codegen(func):
     @lru_cache()
-    def make_func_code(numfields, nkeywords=0):
+    def make_func_code(numfields):
         names = [f'_{n}' for n in range(numfields)]
         d = dict()
-        args = (names, nkeywords) if nkeywords else (names,)
-        exec(func(*args), globals(), d)
+        exec(func(names), globals(), d)
         return d.popitem()[1]
 
     return make_func_code
@@ -104,10 +103,8 @@ def all_hints(cls):
 
 
 @codegen
-def make__init__(fields, nkeywords=0):
-    kwargs = [f + "=None" for f in (fields[-nkeywords:] if nkeywords else [])]
-    args = fields[:-nkeywords] if nkeywords else fields
-    code = 'def __init__(self, ' + ','.join(args + kwargs) + '):\n'
+def make__init__(fields):
+    code = 'def __init__(self, ' + ','.join(fields) + '):\n'
     return code + '\n'.join(f' self.{name} = {name}\n' for name in fields)
 
 
@@ -166,11 +163,10 @@ def dataklass(cls):
     fields = all_hints(cls)
     nfields = len(fields)
     keywords = [k for k in fields.keys() if hasattr(cls, k)]
-    nkeywords = len(keywords)
     defaults = tuple(getattr(cls, k) for k in keywords)
     clsdict = vars(cls)
     if '__init__' not in clsdict:
-        cls.__init__ = patch_args_and_attributes(make__init__(nfields, nkeywords), fields, defaults)
+        cls.__init__ = patch_args_and_attributes(make__init__(nfields), fields, defaults)
     if '__repr__' not in clsdict:
         cls.__repr__ = patch_attributes(make__repr__(nfields), fields, 2)
     if '__eq__' not in clsdict:
