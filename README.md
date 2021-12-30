@@ -1,5 +1,11 @@
 # dataklasses
 
+This is a fork, that
+* Works and tested with Python `3.6`, `3.7`, `3.8`, `3.9`, `3.10`
+* Able to assign default value
+
+# 📖
+
 Dataklasses is a library that allows you to quickly define data
 classes using Python type hints. Here's an example of how you use it:
 
