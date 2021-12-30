@@ -155,11 +155,16 @@ def dataklass(cls):
     fields = all_hints(cls)
     nfields = len(fields)
     clsdict = vars(cls)
-    if not '__init__' in clsdict: cls.__init__ = patch_args_and_attributes(make__init__(nfields), fields)
-    if not '__repr__' in clsdict: cls.__repr__ = patch_attributes(make__repr__(nfields), fields, 2)
-    if not '__eq__' in clsdict: cls.__eq__ = patch_attributes(make__eq__(nfields), fields, 1)
-    # if not '__iter__' in clsdict:  cls.__iter__ = patch_attributes(make__iter__(nfields), fields)
-    # if not '__hash__' in clsdict:  cls.__hash__ = patch_attributes(make__hash__(nfields), fields, 1)
+    if '__init__' not in clsdict:
+        cls.__init__ = patch_args_and_attributes(make__init__(nfields), fields)
+    if '__repr__' not in clsdict:
+        cls.__repr__ = patch_attributes(make__repr__(nfields), fields, 2)
+    if '__eq__' not in clsdict:
+        cls.__eq__ = patch_attributes(make__eq__(nfields), fields, 1)
+    # if '__iter__' not in clsdict:
+    #   cls.__iter__ = patch_attributes(make__iter__(nfields), fields)
+    # if '__hash__' not in clsdict:
+    #   cls.__hash__ = patch_attributes(make__hash__(nfields), fields, 1)
     cls.__match_args__ = tuple(fields)
     return cls
 
