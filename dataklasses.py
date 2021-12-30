@@ -21,7 +21,8 @@ def codegen(func):
     @lru_cache
     def make_func_code(numfields):
         names = [f'_{n}' for n in range(numfields)]
-        exec(func(names), globals(), d := {})
+        d = dict()
+        exec(func(names), globals(), d)
         return d.popitem()[1]
 
     return make_func_code
