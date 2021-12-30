@@ -42,7 +42,7 @@ def patch_attributes(func, fields, start=0):
 
 
 def all_hints(cls):
-    return reduce(lambda x, y: getattr(y, '__annotations__', {}) | x, cls.__mro__, {})
+    return reduce(lambda x, y: {**getattr(y, '__annotations__', {}), **x}, cls.__mro__, {})
 
 
 @codegen
